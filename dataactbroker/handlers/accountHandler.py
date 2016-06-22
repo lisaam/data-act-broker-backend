@@ -449,13 +449,30 @@ class AccountHandler:
 
     def listUsers(self):
         """ List all users ordered by status. Associated request body must have key 'filter_by' """
+        try:
+            requestDict = RequestDictionary(self.request)
+        except:
+            requestDict = None
+
+        if requestDict:
+            if not (requestDict.exists("filter_by") and requestDict.exists("value")):
+                # Missing a required field, return 400
+                exc = ResponseException("Request body must include filter_by and value", StatusCode.CLIENT_ERROR)
+                return JsonResponse.error(exc,exc.status)
+
+            filter_by = requestDict.getValue("filter_by")
+            filter_value = requestDict.getValue("value")
+        else:
+            filter_by = None
+            filter_value = None
+
         user = self.interfaces.userDb.getUserByUID(LoginSession.getName(flaskSession))
         isAgencyAdmin = self.userManager.hasPermission(user, "agency_admin") and not self.userManager.hasPermission(user, "website_admin")
         try:
             if isAgencyAdmin:
-                users = self.interfaces.userDb.getUsers(cgac_code=user.cgac_code)
+                users = self.interfaces.userDb.getUsers(cgac_code=user.cgac_code, filter_by=filter_by, filter_value=filter_value)
             else:
-                users = self.interfaces.userDb.getUsers()
+                users = self.interfaces.userDb.getUsers(filter_by=filter_by, filter_value=filter_value)
         except ValueError as e:
             # Client provided a bad status
             exc = ResponseException(str(e),StatusCode.CLIENT_ERROR,ValueError)

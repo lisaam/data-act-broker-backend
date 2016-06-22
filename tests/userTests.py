@@ -135,12 +135,25 @@ class UserTests(BaseTestAPI):
         self.check_response(response, StatusCode.CLIENT_ERROR)
 
     def test_list_users(self):
-        """Test getting user list by status."""
-        postJson = {"status": "denied"}
-        response = self.app.post_json("/v1/list_users_with_status/", postJson, headers={"x-session-id":self.session_id})
+        """Test getting user list"""
+        response = self.app.post_json("/v1/list_users/", headers={"x-session-id":self.session_id})
+        self.check_response(response, StatusCode.OK)
+
+        postJson = {"filter_by": "status", "value":"denied"}
+        response = self.app.post_json("/v1/list_users/", postJson, headers={"x-session-id": self.session_id})
         self.check_response(response, StatusCode.OK)
         users = response.json["users"]
         self.assertEqual(len(users), 1)
+
+        postJson = {}
+        response = self.app.post_json("/v1/list_users/", postJson, expect_errors=True,
+                                      headers={"x-session-id": self.session_id})
+        self.check_response(response, StatusCode.CLIENT_ERROR)
+
+        postJson = {"filter_by":""}
+        response = self.app.post_json("/v1/list_users/", postJson, expect_errors=True,
+                                  headers={"x-session-id": self.session_id})
+        self.check_response(response, StatusCode.CLIENT_ERROR)
 
     def test_list_users_bad_status(self):
         """Test getting user list with invalid status."""
