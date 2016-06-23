@@ -452,19 +452,15 @@ class AccountHandler:
         try:
             requestDict = RequestDictionary(self.request)
         except:
-            requestDict = None
+            requestDict = {}
 
-        if requestDict:
-            if not (requestDict.exists("filter_by") and requestDict.exists("value")):
-                # Missing a required field, return 400
-                exc = ResponseException("Request body must include filter_by and value", StatusCode.CLIENT_ERROR)
-                return JsonResponse.error(exc,exc.status)
+        if requestDict.exists("filter_by") and not requestDict.exists("value"):
+            # Missing a required field, return 400
+            exc = ResponseException("Request body must include filter_by and value", StatusCode.CLIENT_ERROR)
+            return JsonResponse.error(exc,exc.status)
 
-            filter_by = requestDict.getValue("filter_by")
-            filter_value = requestDict.getValue("value")
-        else:
-            filter_by = None
-            filter_value = None
+        filter_by = requestDict.getValue("filter_by") if requestDict else None
+        filter_value = requestDict.getValue("value") if requestDict else None
 
         user = self.interfaces.userDb.getUserByUID(LoginSession.getName(flaskSession))
         isAgencyAdmin = self.userManager.hasPermission(user, "agency_admin") and not self.userManager.hasPermission(user, "website_admin")
